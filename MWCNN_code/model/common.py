@@ -21,18 +21,11 @@ def default_conv1(in_channels, out_channels, kernel_size, bias=True, groups=3):
 
 def channel_shuffle(x, groups):
     batchsize, num_channels, height, width = x.size()
-
     channels_per_group = num_channels // groups
-
-    # reshape
-    x = x.view(batchsize, groups,
-               channels_per_group, height, width)
-
+    
+    x = x.view(batchsize, groups, channels_per_group, height, width)  # reshape
     x = torch.transpose(x, 1, 2).contiguous()
-
-    # flatten
-    x = x.view(batchsize, -1, height, width)
-
+    x = x.view(batchsize, -1, height, width)      # flatten
     return x
 
 def pixel_down_shuffle(x, downsacale_factor):
@@ -50,7 +43,7 @@ def pixel_down_shuffle(x, downsacale_factor):
 
 
 
-def sp_init(x):
+def sp_fnc(x):
 
     x01 = x[:, :, 0::2, :]
     x02 = x[:, :, 1::2, :]
@@ -62,7 +55,7 @@ def sp_init(x):
 
     return torch.cat((x_LL, x_HL, x_LH, x_HH), 1)
 
-def dwt_init(x):
+def dwt_fnc(x):
 
     x01 = x[:, :, 0::2, :] / 2
     x02 = x[:, :, 1::2, :] / 2
@@ -77,7 +70,7 @@ def dwt_init(x):
 
     return torch.cat((x_LL, x_HL, x_LH, x_HH), 1)
 
-def iwt_init(x):
+def iwt_fnc(x):
     r = 2
     in_batch, in_channel, in_height, in_width = x.size()
     #print([in_batch, in_channel, in_height, in_width])
@@ -100,7 +93,7 @@ def iwt_init(x):
 
 class Channel_Shuffle(nn.Module):
     def __init__(self, conv_groups):
-        super(Channel_Shuffle, self).__init__()
+        super().__init__()
         self.conv_groups = conv_groups
         self.requires_grad = False
 
@@ -109,15 +102,15 @@ class Channel_Shuffle(nn.Module):
 
 class SP(nn.Module):
     def __init__(self):
-        super(SP, self).__init__()
+        super().__init__()
         self.requires_grad = False
 
     def forward(self, x):
-        return sp_init(x)
+        return sp_fnc(x)
 
 class Pixel_Down_Shuffle(nn.Module):
     def __init__(self):
-        super(Pixel_Down_Shuffle, self).__init__()
+        super().__init__()
         self.requires_grad = False
 
     def forward(self, x):
@@ -125,24 +118,24 @@ class Pixel_Down_Shuffle(nn.Module):
 
 class DWT(nn.Module):
     def __init__(self):
-        super(DWT, self).__init__()
+        super().__init__()
         self.requires_grad = False
 
     def forward(self, x):
-        return dwt_init(x)
+        return dwt_fnc(x)
 
 class IWT(nn.Module):
     def __init__(self):
-        super(IWT, self).__init__()
+        super().__init__()
         self.requires_grad = False
 
     def forward(self, x):
-        return iwt_init(x)
+        return iwt_fnc(x)
 
 
 class MeanShift(nn.Conv2d):
     def __init__(self, rgb_range, rgb_mean, rgb_std, sign=-1):
-        super(MeanShift, self).__init__(3, 3, kernel_size=1)
+        super().__init__(3, 3, kernel_size=1)
         std = torch.Tensor(rgb_std)
         self.weight.data = torch.eye(3).view(3, 3, 1, 1)
         self.weight.data.div_(std.view(3, 1, 1, 1))
@@ -154,7 +147,7 @@ class MeanShift(nn.Conv2d):
             self.volatile = True
 class MeanShift2(nn.Conv2d):
     def __init__(self, rgb_range, rgb_mean, rgb_std, sign=-1):
-        super(MeanShift2, self).__init__(4, 4, kernel_size=1)
+        super().__init__(4, 4, kernel_size=1)
         std = torch.Tensor(rgb_std)
         self.weight.data = torch.eye(4).view(4, 4, 1, 1)
         self.weight.data.div_(std.view(4, 1, 1, 1))
@@ -175,14 +168,14 @@ class BasicBlock(nn.Sequential):
         ]
         if bn: m.append(nn.BatchNorm2d(out_channels))
         if act is not None: m.append(act)
-        super(BasicBlock, self).__init__(*m)
+        super().__init__(*m)
 
 class BBlock(nn.Module):
     def __init__(
         self, conv, in_channels, out_channels, kernel_size,
         bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
-        super(BBlock, self).__init__()
+        super().__init__()
         m = []
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias))
         if bn: m.append(nn.BatchNorm2d(out_channels, eps=1e-4, momentum=0.95))
@@ -201,7 +194,7 @@ class DBlock_com(nn.Module):
         self, conv, in_channels, out_channels, kernel_size,
         bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
-        super(DBlock_com, self).__init__()
+        super().__init__()
         m = []
 
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias, dilation=2))
@@ -224,7 +217,7 @@ class DBlock_inv(nn.Module):
         self, conv, in_channels, out_channels, kernel_size,
         bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
-        super(DBlock_inv, self).__init__()
+        super().__init__()
         m = []
 
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias, dilation=3))
@@ -247,7 +240,7 @@ class DBlock_com1(nn.Module):
         self, conv, in_channels, out_channels, kernel_size,
         bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
-        super(DBlock_com1, self).__init__()
+        super().__init__()
         m = []
 
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias, dilation=2))
@@ -270,7 +263,7 @@ class DBlock_inv1(nn.Module):
         self, conv, in_channels, out_channels, kernel_size,
         bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
-        super(DBlock_inv1, self).__init__()
+        super().__init__()
         m = []
 
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias, dilation=2))
@@ -293,7 +286,7 @@ class DBlock_com2(nn.Module):
         self, conv, in_channels, out_channels, kernel_size,
         bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
-        super(DBlock_com2, self).__init__()
+        super().__init__()
         m = []
 
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias, dilation=2))
@@ -316,7 +309,7 @@ class DBlock_inv2(nn.Module):
         self, conv, in_channels, out_channels, kernel_size,
         bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
-        super(DBlock_inv2, self).__init__()
+        super().__init__()
         m = []
 
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias, dilation=2))
@@ -339,7 +332,7 @@ class ShuffleBlock(nn.Module):
         self, conv, in_channels, out_channels, kernel_size,
         bias=True, bn=False, act=nn.ReLU(True), res_scale=1,conv_groups=1):
 
-        super(ShuffleBlock, self).__init__()
+        super().__init__()
         m = []
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias))
         m.append(Channel_Shuffle(conv_groups))

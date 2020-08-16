@@ -8,7 +8,7 @@ def make_model(args, parent=False):
 
 class MWCNN(nn.Module):
     def __init__(self, args, conv=common.default_conv):
-        super(MWCNN, self).__init__()
+        super().__init__()
         n_resblocks = args.n_resblocks
         n_feats = args.n_feats
         kernel_size = 3
@@ -32,9 +32,11 @@ class MWCNN(nn.Module):
         d_l2 = []
         d_l2.append(common.BBlock(conv, n_feats * 8, n_feats * 4, kernel_size, act=act, bn=False))
         d_l2.append(common.DBlock_com1(conv, n_feats * 4, n_feats * 4, kernel_size, act=act, bn=False))
+
         pro_l3 = []
         pro_l3.append(common.BBlock(conv, n_feats * 16, n_feats * 8, kernel_size, act=act, bn=False))
         pro_l3.append(common.DBlock_com(conv, n_feats * 8, n_feats * 8, kernel_size, act=act, bn=False))
+
         pro_l3.append(common.DBlock_inv(conv, n_feats * 8, n_feats * 8, kernel_size, act=act, bn=False))
         pro_l3.append(common.BBlock(conv, n_feats * 8, n_feats * 16, kernel_size, act=act, bn=False))
 
@@ -58,16 +60,43 @@ class MWCNN(nn.Module):
         self.i_l0 = nn.Sequential(*i_l0)
         self.tail = nn.Sequential(*m_tail)
 
-    def forward(self, x):
-        x0 = self.d_l0(self.head(x))
+    def forward(self, input, delay = False):
+        # if delay:
+        #     x0 = self.d_l0(self.head(input))
+        #     x1 = self.d_l1(self.DWT(x0))
+        #     x2 = self.d_l2(self.DWT(x1))
+        #     x2_ = self.DWT(x2)
+        #     x3 = self.IWT(self.pro_l3(x2_)) #+ x2
+        #     x4 = self.IWT(self.i_l2(x3))             #+ x1
+        #     x5 = self.IWT(self.i_l1(x4))             #+ x0
+        #     x6 = self.tail(self.i_l0(x5))             #+ x
+        #     out0 = x6 
+
+        #     x4_ = self.IWT(self.i_l2(x3 + x2))             #+ x1
+        #     x5 = self.IWT(self.i_l1(x4))             #+ x0
+        #     x6 = self.tail(self.i_l0(x5))             #+ x
+        #     out1 = x6 
+
+        #     x5 = self.IWT(self.i_l1(x4 + x1))             #+ x0
+        #     x6 = self.tail(self.i_l0(x5))             #+ x
+        #     out2 = x6 
+
+        #     x6 = self.tail(self.i_l0(x5 + x0))             #+ x
+        #     out3 = x6
+
+        #     out4 = x6 + input
+
+        #     return x
+
+        # else:
+        x0 = self.d_l0(self.head(input)
         x1 = self.d_l1(self.DWT(x0))
         x2 = self.d_l2(self.DWT(x1))
-        x_ = self.IWT(self.pro_l3(self.DWT(x2))) + x2
-        x_ = self.IWT(self.i_l2(x_)) + x1
-        x_ = self.IWT(self.i_l1(x_)) + x0
-        x = self.tail(self.i_l0(x_)) + x
-
-        return x
+        x_ = self.IWT(self.pro_l3(self.DWT(x2))) 
+        x_ = self.IWT(self.i_l2(x_ + x2 ))             
+        x_ = self.IWT(self.i_l1(x_ + x1))             
+        x = self.tail(self.i_l0(x_ + x0))             
+        return x + input
 
     def set_scale(self, scale_idx):
         self.scale_idx = scale_idx
